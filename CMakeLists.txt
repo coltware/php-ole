@@ -1,0 +1,25 @@
+cmake_minimum_required(VERSION 2.6)
+
+PROJECT(ole C)
+
+include(FindPkgConfig)
+include(FindPHPLibs)
+pkg_check_modules(LIBGSF REQUIRED libgsf-1)
+
+message(${PHP_INCLUDE_DIRS})
+message(${LIBGSF_LIBRARIES})
+
+CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/config.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/config.h)
+add_definitions(-DPHP_ATOM_INC -DHAVE_CONFIG_H )
+
+INCLUDE_DIRECTORIES(${PHP_INCLUDE_DIRS} ${LIBGSF_INCLUDE_DIRS} ${CMAKE_CURRENT_BINARY_DIR})
+LINK_DIRECTORIES(${LIBGSF_LIBRARY_DIRS})
+LINK_LIBRARIES(${PHP_LIBRARIES} ${LIBGSF_LIBRARIES})
+
+IF(APPLE)
+	include(BundleUtilities)
+	set(CMAKE_OSX_ARCHITECTURES "x86_64")
+ENDIF()
+
+ADD_LIBRARY(ole MODULE ole.c ole_stream.c)
+

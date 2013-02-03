@@ -255,6 +255,36 @@ static PHP_METHOD(OleInfile,	numChildren)
 	RETURN_LONG(infile->num);
 }
 
+static PHP_METHOD(OleInfile,	statIndex)
+{
+	php_ole_infile *infile = (php_ole_infile *)zend_object_store_get_object(getThis() TSRMLS_CC);
+	if (infile->file == NULL)
+	{
+		RETURN_FALSE;
+	}
+	long idx;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l", &idx) == FAILURE) {
+		return;
+	}
+	if( idx < 0 || idx >= infile->num){
+		RETURN_FALSE;
+	}
+	GsfInput *input = gsf_infile_child_by_index(infile->file,(int)idx);
+	if(!input){
+		RETURN_FALSE;
+	}
+
+	array_init(return_value);
+	char *name = gsf_infile_name_by_index(infile->file,(int)idx);
+	int size = gsf_input_size(input);
+
+	add_assoc_string(return_value,"name",name,1);
+	add_assoc_long(return_value,"size",size);
+
+	g_object_unref( G_OBJECT( input ));
+}
+
 static PHP_METHOD(OleInfile,	getStreamByName)
 {
 	php_ole_infile *infile = (php_ole_infile *)zend_object_store_get_object(getThis() TSRMLS_CC);
@@ -316,12 +346,13 @@ static PHP_METHOD(OleInfile,	getEncryptionInfo)
 }
 
 const zend_function_entry ole_infile_methods[] = {
-	PHP_ME(OleInfile	,__construc			,NULL	,ZEND_ACC_PUBLIC)
-	PHP_ME(OleInfile	,open					,NULL	,ZEND_ACC_PUBLIC)
-	PHP_ME(OleInfile	,numChildren	,NULL	,ZEND_ACC_PUBLIC)
-	PHP_ME(OleInfile	,getStreamByName,NULL,ZEND_ACC_PUBLIC)
-	PHP_ME(OleInfile	,getEncryptionInfo,NULL,ZEND_ACC_PUBLIC)
-	{NULL,	NULL,		NULL}
+	PHP_ME(OleInfile	,__construct		,NULL	,ZEND_ACC_PUBLIC)
+	PHP_ME(OleInfile	,open				,NULL	,ZEND_ACC_PUBLIC)
+	PHP_ME(OleInfile	,numChildren		,NULL	,ZEND_ACC_PUBLIC)
+	PHP_ME(OleInfile	,statIndex			,NULL	,ZEND_ACC_PUBLIC)
+	PHP_ME(OleInfile	,getStreamByName	,NULL	,ZEND_ACC_PUBLIC)
+	PHP_ME(OleInfile	,getEncryptionInfo	,NULL	,ZEND_ACC_PUBLIC)
+	{NULL	,NULL	,NULL}
 };
 
 static PHP_METHOD(OleEncryptionInfo, verifyPassword)
@@ -459,10 +490,9 @@ static PHP_METHOD(OleEncryptionInfo, verifyPassword)
 static PHP_METHOD(OleEncryptionInfo,getSecretKey)
 {
 	php_ole_enc_info *info = (php_ole_enc_info *)zend_object_store_get_object(getThis() TSRMLS_CC);
-
-  if(info->secret_key == NULL){
-    RETURN_FALSE;
-  }
+	if(info->secret_key == NULL){
+		RETURN_FALSE;
+	}
 	RETURN_STRINGL(info->secret_key,info->secret_key_length,1);
 }
 
@@ -485,11 +515,11 @@ static PHP_METHOD(OleEncryptionInfo,getVerifierHash)
 }
 
 const zend_function_entry ole_enc_info_methods[] = {
-	PHP_ME(OleEncryptionInfo,	verifyPassword,	NULL	,ZEND_ACC_PUBLIC)
-	PHP_ME(OleEncryptionInfo,	getSecretKey	,	NULL	,ZEND_ACC_PUBLIC)
-	PHP_ME(OleEncryptionInfo,	getVerifier		, NULL	,ZEND_ACC_PUBLIC)
-	PHP_ME(OleEncryptionInfo,	getVerifierHash, NULL	,ZEND_ACC_PUBLIC)
-	{NULL,	NULL,		NULL}
+	PHP_ME(OleEncryptionInfo,	verifyPassword,		NULL	,ZEND_ACC_PUBLIC)
+	PHP_ME(OleEncryptionInfo,	getSecretKey,		NULL	,ZEND_ACC_PUBLIC)
+	PHP_ME(OleEncryptionInfo,	getVerifier, 		NULL	,ZEND_ACC_PUBLIC)
+	PHP_ME(OleEncryptionInfo,	getVerifierHash, 	NULL	,ZEND_ACC_PUBLIC)
+	{NULL,	NULL,	NULL}
 };
 
 
@@ -506,7 +536,6 @@ static int le_ole;
  * Every user visible function must have an entry in ole_functions[].
  */
 const zend_function_entry ole_functions[] = {
-	PHP_FE(confirm_ole_compiled,	NULL)		/* For testing, remove later. */
 	{NULL, NULL, NULL}	/* Must be the last line in ole_functions[] */
 };
 /* }}} */
@@ -611,40 +640,8 @@ PHP_MINFO_FUNCTION(ole)
 	php_info_print_table_start();
 	php_info_print_table_header(2, "ole support", "enabled");
 	php_info_print_table_end();
-
-	/* Remove comments if you have entries in php.ini
-	DISPLAY_INI_ENTRIES();
-	*/
 }
 /* }}} */
-
-
-/* Remove the following function when you have succesfully modified config.m4
-   so that your module can be compiled into PHP, it exists only for testing
-   purposes. */
-
-/* Every user-visible function in PHP should document itself in the source */
-/* {{{ proto string confirm_ole_compiled(string arg)
-   Return a string to confirm that the module is compiled in */
-PHP_FUNCTION(confirm_ole_compiled)
-{
-	char *arg = NULL;
-	int arg_len, len;
-	char *strg;
-
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &arg, &arg_len) == FAILURE) {
-		return;
-	}
-
-	len = spprintf(&strg, 0, "Congratulations! You have successfully modified ext/%.78s/config.m4. Module %.78s is now compiled into PHP.", "ole", arg);
-	RETURN_STRINGL(strg, len, 0);
-}
-/* }}} */
-/* The previous line is meant for vim and emacs, so it can correctly fold and 
-   unfold functions in source code. See the corresponding marks just before 
-   function definition, where the functions purpose is also documented. Please 
-   follow this convention for the convenience of others editing your code.
-*/
 
 
 /*

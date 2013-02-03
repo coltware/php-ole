@@ -10,28 +10,34 @@ echo "Functions available in the test extension:$br\n";
 foreach($functions as $func) {
     echo $func."$br\n";
 }
-echo "$br\n";
-$function = 'confirm_' . $module . '_compiled';
-if (extension_loaded($module)) {
-	$str = $function($module);
-} else {
-	$str = "Module $module is not compiled into PHP";
-}
-echo "$str\n";
-
 
 $ole = new OleInfile();
 $methods = get_class_methods($ole);
+print "------ Class ".get_class($ole)." method list --------\n";
 var_dump($methods);
 
-$ret = $ole->open("/mnt/hgfs/VMShare/wordml/Book.xlsx");
+
+$ret = $ole->open("php/test/passwd_abc.docx");
 if($ret){
-	var_dump($ole);
+	$num = $ole->numChildren();
+	if($num > 0){
+		for($i = 0; $i < $num; $i++){
+			$stat = $ole->statIndex($i);
+			var_dump($stat);
+			//
+			//  array(2) {
+			//		["name"] => "xxxxxxx",
+			//		["size"] => 9999
+			//  }
+		}
+	}
+	
 	$info = $ole->getEncryptionInfo();
 	if($info){
+		print "------ Class ".get_class($info)." method list --------\n";
 		var_dump(get_class_methods($info));
-
-		$pass = password("sample",$info);
+		
+		$pass = password("abc",$info);
 		
 		if($pass){
 			print "====== OK ==== \n";
@@ -44,12 +50,11 @@ if($ret){
 					$data .= fread($fp,4096);
 				}
 				fclose($fp);
-
 				$iv_size = mcrypt_get_iv_size(MCRYPT_RIJNDAEL_128, MCRYPT_MODE_ECB);
 				$iv = mcrypt_create_iv($iv_size, MCRYPT_RAND);
 				$skey = $info->getSecretKey();
 				$content = mcrypt_decrypt(MCRYPT_RIJNDAEL_128, $skey, $data, MCRYPT_MODE_ECB, $iv);
-				$out = fopen("/mnt/hgfs/VMShare/wordml/Book_un.xlsx","w");
+				$out = fopen("passwd_abc.docx","w");
 				fwrite($out,$content);
 				fclose($out);
 			}
@@ -58,12 +63,11 @@ if($ret){
 }
 
 function password($pswd,$info){
-
-	$info->verifyPassword(mb_convert_encoding($pswd,"UTF-16LE"));
-
+	
+	$info->verifyPassword(iconv("UTF-8","UTF-16LE",$pswd));
 	$skey = $info->getSecretKey();
-  $vf = $info->getVerifier();
-  $vf_hash = $info->getVerifierHash();
+	$vf = $info->getVerifier();
+	$vf_hash = $info->getVerifierHash();
 
   $size = mcrypt_get_iv_size(MCRYPT_RIJNDAEL_128, MCRYPT_MODE_ECB);
   $iv = mcrypt_create_iv($size, MCRYPT_RAND);

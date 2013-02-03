@@ -12,7 +12,7 @@
   | obtain it through the world-wide-web, please send a note to          |
   | license@php.net so we can mail you a copy immediately.               |
   +----------------------------------------------------------------------+
-  | Author:                                                              |
+  | Author: coltware@gmail.com                                           |
   +----------------------------------------------------------------------+
 */
 
@@ -56,9 +56,6 @@ PHP_MSHUTDOWN_FUNCTION(ole);
 PHP_RINIT_FUNCTION(ole);
 PHP_RSHUTDOWN_FUNCTION(ole);
 PHP_MINFO_FUNCTION(ole);
-
-PHP_FUNCTION(confirm_ole_compiled);	/* For testing, remove later. */
-
 
 /* 
   	Declare any global variables you may need between the BEGIN
