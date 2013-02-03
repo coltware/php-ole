@@ -16,11 +16,16 @@ $methods = get_class_methods($ole);
 print "------ Class ".get_class($ole)." method list --------\n";
 var_dump($methods);
 
+$file = $argv[1];
+if(!is_file($file)){
+	die("can't find input-file [".$file."]\n");
+}
 
-$ret = $ole->open("php/test/passwd_abc.docx");
+$ret = $ole->open($file);
 if($ret){
 	$num = $ole->numChildren();
 	if($num > 0){
+		print "=== document entries === \n";
 		for($i = 0; $i < $num; $i++){
 			$stat = $ole->statIndex($i);
 			var_dump($stat);
@@ -54,7 +59,7 @@ if($ret){
 				$iv = mcrypt_create_iv($iv_size, MCRYPT_RAND);
 				$skey = $info->getSecretKey();
 				$content = mcrypt_decrypt(MCRYPT_RIJNDAEL_128, $skey, $data, MCRYPT_MODE_ECB, $iv);
-				$out = fopen("passwd_abc.docx","w");
+				$out = fopen(basename($file),"w");
 				fwrite($out,$content);
 				fclose($out);
 			}
@@ -64,17 +69,22 @@ if($ret){
 
 function password($pswd,$info){
 	
-	$info->verifyPassword(iconv("UTF-8","UTF-16LE",$pswd));
+	if(function_exists('mb_convert_encoding')){
+		$info->verifyPassword(mb_convert_encoding($pswd,"UTF-16LE","UTF-8"));	
+	}
+	else{
+		$info->verifyPassword(iconv("UTF-8","UTF-16LE",$pswd));
+	}
 	$skey = $info->getSecretKey();
 	$vf = $info->getVerifier();
 	$vf_hash = $info->getVerifierHash();
-
-  $size = mcrypt_get_iv_size(MCRYPT_RIJNDAEL_128, MCRYPT_MODE_ECB);
-  $iv = mcrypt_create_iv($size, MCRYPT_RAND);
-  $_check1 = mcrypt_decrypt(MCRYPT_RIJNDAEL_128, $skey, $vf, MCRYPT_MODE_ECB, $iv);
-  $check1 = sha1($_check1,1);
-  $check2 = mcrypt_decrypt(MCRYPT_RIJNDAEL_128, $skey, $vf_hash, MCRYPT_MODE_ECB, $iv);
-
+	
+	$size = mcrypt_get_iv_size(MCRYPT_RIJNDAEL_128, MCRYPT_MODE_ECB);
+	$iv = mcrypt_create_iv($size, MCRYPT_RAND);
+	$_check1 = mcrypt_decrypt(MCRYPT_RIJNDAEL_128, $skey, $vf, MCRYPT_MODE_ECB, $iv);
+	$check1 = sha1($_check1,1);
+	$check2 = mcrypt_decrypt(MCRYPT_RIJNDAEL_128, $skey, $vf_hash, MCRYPT_MODE_ECB, $iv);
+	
 	if($check1 == substr($check2,0,strlen($check1))){
 		return true;
 	}
